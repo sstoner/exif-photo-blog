@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - feat/*
     tags:
       - 'v*'
   pull_request:
@@ -57,13 +58,11 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/feat/immich') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
 
       - name: Image digest
         run: echo ${{ steps.build.outputs.digest }}

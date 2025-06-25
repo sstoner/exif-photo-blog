@@ -2,7 +2,6 @@
 import {
   USE_IMMICH_BACKEND,
   IMMICH_BASE_URL,
-  IMMICH_API_KEY,
   IMMICH_DEFAULT_ALBUM_ID,
 } from '@/app/config';
 import { getImmichClient } from '@/platforms/immich/client';
@@ -82,8 +81,7 @@ class PlatformDataSource implements PhotoDataSource {
 
 export function createPhotoDataSource(): PhotoDataSource {
   if (USE_IMMICH_BACKEND &&
-    IMMICH_BASE_URL &&
-    IMMICH_API_KEY) {
+    IMMICH_BASE_URL) {
     const api = getImmichClient();
     return new ImmichDataSource(api, IMMICH_DEFAULT_ALBUM_ID || '');
   } else {

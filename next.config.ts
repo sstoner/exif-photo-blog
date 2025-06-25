@@ -1,3 +1,4 @@
+import { IMMICH_BASE_URL } from '@/app/config';
 import type { NextConfig } from 'next';
 import { RemotePattern } from 'next/dist/shared/lib/image-config';
 import path from 'path';
@@ -41,6 +42,10 @@ if (HOSTNAME_CLOUDFLARE_R2) {
 if (HOSTNAME_AWS_S3) {
   remotePatterns.push(generateRemotePattern(HOSTNAME_AWS_S3));
 }
+
+const HOSTNAME_IMMICH = IMMICH_BASE_URL || 'https://immich.example.com';
+remotePatterns.push(generateRemotePattern(HOSTNAME_IMMICH));
+
 
 const LOCALE = process.env.NEXT_PUBLIC_LOCALE || 'en-us';
 const LOCALE_ALIAS = './date-fns-locale-alias';

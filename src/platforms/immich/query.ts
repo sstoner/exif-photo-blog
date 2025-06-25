@@ -125,11 +125,12 @@ export class ImmichDataSource implements PhotoDataSource {
   async getPhoto(id: string,
     includeHidden?: boolean): Promise<Photo | undefined> {
     const assetId = id;
-    const asset = await this.api.getAssetInfo(assetId);
+    const sharedKey = await getSharedKey();
+    const asset = await this.api.getAssetInfo(assetId, false, sharedKey);
     if (!asset) {
       return undefined;
     }
-    const sharedKey = await getSharedKey();
+
     const photo = convertImmichAssetToPhoto(asset, 'preview', sharedKey);
     if (!includeHidden && photo.hidden) {
       return undefined;

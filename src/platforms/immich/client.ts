@@ -1,6 +1,5 @@
 import {
   IMMICH_BASE_URL,
-  IMMICH_API_KEY,
 } from '@/app/config';
 
 export interface ImmichAlbumInfo {
@@ -97,9 +96,9 @@ export interface ImmichSharedLinkInfo {
 
 export class ImmichApiClient {
   private baseUrl: string;
-  private apiKey: string;
+  private apiKey: string | undefined;
 
-  constructor(baseUrl: string, apiKey: string) {
+  constructor(baseUrl: string, apiKey?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.apiKey = apiKey;
   }
@@ -111,7 +110,7 @@ export class ImmichApiClient {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': this.apiKey,
+        // 'x-api-key': this.apiKey,
         ...options.headers,
       },
     });
@@ -157,12 +156,13 @@ export class ImmichApiClient {
     }
   }
 
-  async getAssetInfo(id: string, _hidden?: boolean): Promise<ImmichAsset> {
+  async getAssetInfo(id: string, _hidden?: boolean, shareKey?: string): Promise<ImmichAsset> {
     if (!id || id.trim() === '') {
       throw new Error('Asset ID is required');
     }
     try {
-      const asset = await this.request<ImmichAsset>(`/assets/${id}`);
+      const queryParams = shareKey ? `?key=${shareKey}` : '';
+      const asset = await this.request<ImmichAsset>(`/assets/${id}${queryParams}`);
       // TODO: use hidden
       return asset;
     } catch (error) {
@@ -200,11 +200,11 @@ let immichClient: ImmichApiClient;
 
 export const getImmichClient = (): ImmichApiClient => {
   if (!immichClient) {
-    if (!IMMICH_BASE_URL || !IMMICH_API_KEY) {
-      throw new Error('IMMICH_BASE_URL and IMMICH_API_KEY required');
+    if (!IMMICH_BASE_URL) {
+      throw new Error('IMMICH_BASE_URL required');
     }
 
-    immichClient = new ImmichApiClient(IMMICH_BASE_URL, IMMICH_API_KEY);
+    immichClient = new ImmichApiClient(IMMICH_BASE_URL);
   }
   return immichClient;
 };

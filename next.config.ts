@@ -30,7 +30,7 @@ const generateRemotePattern = (hostname: string) => {
     pathname: '/**',
   } as const;
 };
-
+const HOSTNAME_IMMICH = process.env.IMMICH_BASE_URL || 'https://immich.example.com';
 const remotePatterns: RemotePattern[] = [];
 
 if (HOSTNAME_VERCEL_BLOB) {
@@ -42,9 +42,9 @@ if (HOSTNAME_CLOUDFLARE_R2) {
 if (HOSTNAME_AWS_S3) {
   remotePatterns.push(generateRemotePattern(HOSTNAME_AWS_S3));
 }
-
-const HOSTNAME_IMMICH = IMMICH_BASE_URL || 'https://immich.example.com';
-remotePatterns.push(generateRemotePattern(HOSTNAME_IMMICH));
+if (HOSTNAME_IMMICH) {
+  remotePatterns.push(generateRemotePattern(HOSTNAME_IMMICH));
+}
 
 
 const LOCALE = process.env.NEXT_PUBLIC_LOCALE || 'en-us';

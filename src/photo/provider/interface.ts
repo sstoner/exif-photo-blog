@@ -7,7 +7,7 @@ import { Recipes } from '@/recipe';
 import { Films } from '@/film';
 import { FocalLengths } from '@/focal';
 
-export interface PhotoDataSource {
+export interface PhotoProvider {
   getPhotos(options: GetPhotosOptions): Promise<Photo[]>;
   getPhotosNearId(photoId: string, options: GetPhotosOptions): Promise<{
     photos: Photo[];

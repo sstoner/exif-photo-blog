@@ -1,32 +1,32 @@
 import { GetPhotosOptions } from '.';
-import { createPhotoDataSource } from '../provider/factory';
+import { createPhotoProvider } from '../provider/factory';
 
-const dataSource = createPhotoDataSource();
+const provider = createPhotoProvider();
 
 export const getPhotos = (options: GetPhotosOptions) =>
-  dataSource.getPhotos(options);
+  provider.getPhotos(options);
 export const getPhoto = (id: string, includeHidden?: boolean) =>
-  dataSource.getPhoto(id, includeHidden);
+  provider.getPhoto(id, includeHidden);
 export const getPhotosMeta = (options?: GetPhotosOptions) =>
-  dataSource.getPhotosMeta(options);
+  provider.getPhotosMeta(options);
 export const getUniqueCameras = () =>
-  dataSource.getUniqueCameras();
+  provider.getUniqueCameras();
 export const getUniqueLenses = () =>
-  dataSource.getUniqueLenses();
+  provider.getUniqueLenses();
 export const getUniqueTags = () =>
-  dataSource.getUniqueTags();
+  provider.getUniqueTags();
 export const getUniqueFocalLengths = () =>
-  dataSource.getUniqueFocalLengths();
+  provider.getUniqueFocalLengths();
 export const getPublicPhotoIds = (options?: { limit?: number }) =>
-  dataSource.getPublicPhotoIds(options);
+  provider.getPublicPhotoIds(options);
 export const getPhotoIdsAndUpdatedAt = () =>
-  dataSource.getPhotoIdsAndUpdatedAt();
+  provider.getPhotoIdsAndUpdatedAt();
 export const getPhotosNearId = (photoId: string, options: GetPhotosOptions) =>
-  dataSource.getPhotosNearId(photoId, options);
+  provider.getPhotosNearId(photoId, options);
 export const getUniqueFilms = () =>
-  dataSource.getUniqueFilms();
+  provider.getUniqueFilms();
 export const getUniqueRecipes = () =>
-  dataSource.getUniqueRecipes();
+  provider.getUniqueRecipes();
 
 // write operations - internal API
 export {

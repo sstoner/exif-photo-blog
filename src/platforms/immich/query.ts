@@ -4,7 +4,7 @@ import { Tags } from '@/tag';
 import { Cameras } from '@/camera';
 import { Lenses } from '@/lens';
 import { FocalLengths } from '@/focal';
-import { PhotoDataSource } from '@/photo/provider/interface';
+import { PhotoProvider } from '@/photo/provider/interface';
 import { GetPhotosOptions } from '@/photo/db';
 import {
   getPhotosCached,
@@ -23,7 +23,7 @@ import {
   ImmichApiClient,
 } from '@/platforms/immich/client';
 
-export class ImmichDataSource implements PhotoDataSource {
+export class ImmichProvider implements PhotoProvider {
   private api: ImmichApiClient;
   private albumId: string;
 

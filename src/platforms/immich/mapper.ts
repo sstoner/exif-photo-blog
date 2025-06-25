@@ -1,4 +1,4 @@
-import { dateRangeForPhotos, Photo } from '@/photo';
+import { Photo } from '@/photo';
 import { ImmichAsset } from './client';
 import { formatFocalLength } from '@/focal';
 import {
@@ -7,11 +7,10 @@ import {
   formatExposureTime,
   formatIso,
 } from '@/utility/exif-format';
-import { formatDate, formatDateForPostgres, formatDateFromPostgresString, VALIDATION_EXAMPLE_POSTGRES } from '@/utility/date';
+import { formatDateForPostgres } from '@/utility/date';
 import { generatePhotoSyncStatus } from '@/photo/sync';
 import { GRID_ASPECT_RATIO, IMMICH_BASE_URL } from '@/app/config';
 import { thumbHashToDataURL } from 'thumbhash';
-import { parse, format } from 'date-fns';
 
 export const decodeBase64 = (data: string) =>
   Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
@@ -36,7 +35,9 @@ export const convertImmichAssetToPhoto = (
         parseFloat(exif.exposureCompensation) : undefined,
     ),
     takenAtNaiveFormatted: formatDateForPostgres(
-      new Date(exif?.dateTimeOriginal || asset.localDateTime || asset.fileCreatedAt),
+      new Date(exif?.dateTimeOriginal ||
+        asset.localDateTime ||
+        asset.fileCreatedAt),
     ),
     tags: asset?.tags || [],
     recipeData: undefined,
@@ -60,7 +61,10 @@ export const convertImmichAssetToPhoto = (
       filter(Boolean).join(', '),
     priorityOrder: undefined,
     hidden: asset.isArchived,
-    takenAtNaive: formatDateForPostgres(new Date(exif?.dateTimeOriginal || asset.localDateTime || asset.fileCreatedAt)),
+    takenAtNaive: formatDateForPostgres(
+      new Date(exif?.dateTimeOriginal ||
+        asset.localDateTime ||
+        asset.fileCreatedAt)),
     // PhotoExif
     aspectRatio: exif?.exifImageWidth && exif?.exifImageHeight
       ? exif.exifImageWidth / exif.exifImageHeight

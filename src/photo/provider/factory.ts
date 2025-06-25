@@ -6,10 +6,10 @@ import {
 } from '@/app/config';
 import { getImmichClient } from '@/platforms/immich/client';
 import { GetPhotosOptions } from '@/photo/db';
-import { PhotoDataSource } from './interface';
-import { ImmichDataSource } from '@/platforms/immich/query';
+import { PhotoProvider } from './interface';
+import { ImmichProvider } from '@/platforms/immich/query';
 
-class PlatformDataSource implements PhotoDataSource {
+class DatabaseProvider implements PhotoProvider {
   async getPhotos(options?: any) {
     const { getPhotos } = await import('@/photo/db/database');
     return getPhotos(options);
@@ -79,12 +79,12 @@ class PlatformDataSource implements PhotoDataSource {
 }
 
 
-export function createPhotoDataSource(): PhotoDataSource {
+export function createPhotoProvider(): PhotoProvider {
   if (USE_IMMICH_BACKEND &&
     IMMICH_BASE_URL) {
     const api = getImmichClient();
-    return new ImmichDataSource(api, IMMICH_DEFAULT_ALBUM_ID || '');
+    return new ImmichProvider(api, IMMICH_DEFAULT_ALBUM_ID || '');
   } else {
-    return new PlatformDataSource();
+    return new DatabaseProvider();
   }
 }

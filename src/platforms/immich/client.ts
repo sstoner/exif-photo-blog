@@ -156,13 +156,17 @@ export class ImmichApiClient {
     }
   }
 
-  async getAssetInfo(id: string, _hidden?: boolean, shareKey?: string): Promise<ImmichAsset> {
+  async getAssetInfo(
+    id: string,
+    _hidden?: boolean,
+    shareKey?: string): Promise<ImmichAsset> {
     if (!id || id.trim() === '') {
       throw new Error('Asset ID is required');
     }
     try {
       const queryParams = shareKey ? `?key=${shareKey}` : '';
-      const asset = await this.request<ImmichAsset>(`/assets/${id}${queryParams}`);
+      const asset = await this.
+        request<ImmichAsset>(`/assets/${id}${queryParams}`);
       // TODO: use hidden
       return asset;
     } catch (error) {

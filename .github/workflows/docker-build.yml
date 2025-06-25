@@ -60,6 +60,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/feat/immich') }}
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            MY_IMMICH_BASE_URL=${{ secrets.MY_IMMICH_BASE_URL }}
+            MY_PUBLIC_DOMAIN_URL=${{ secrets.MY_PUBLIC_DOMAIN_URL }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

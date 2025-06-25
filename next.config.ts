@@ -1,4 +1,3 @@
-import { IMMICH_BASE_URL } from '@/app/config';
 import type { NextConfig } from 'next';
 import { RemotePattern } from 'next/dist/shared/lib/image-config';
 import path from 'path';
@@ -10,6 +9,8 @@ const VERCEL_BLOB_STORE_ID = process.env.BLOB_READ_WRITE_TOKEN?.match(
 const HOSTNAME_VERCEL_BLOB = VERCEL_BLOB_STORE_ID
   ? `${VERCEL_BLOB_STORE_ID}.public.blob.vercel-storage.com`
   : undefined;
+
+const HOSTNAME_IMMICH = process.env.IMMICH_BASE_URL || 'https://immich.app';
 
 const HOSTNAME_CLOUDFLARE_R2 =
   process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_DOMAIN;
@@ -26,11 +27,11 @@ const generateRemotePattern = (hostname: string) => {
   return {
     protocol: parsedUrl.protocol.replace(':', '') as 'http' | 'https',
     hostname: parsedUrl.hostname,
-    port: parsedUrl.port || undefined,
+    port: parsedUrl.port || '',
     pathname: '/**',
   } as const;
 };
-const HOSTNAME_IMMICH = process.env.IMMICH_BASE_URL || 'https://immich.example.com';
+
 const remotePatterns: RemotePattern[] = [];
 
 if (HOSTNAME_VERCEL_BLOB) {

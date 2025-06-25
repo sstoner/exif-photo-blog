@@ -34,10 +34,13 @@ COPY . .
 RUN rm -rf __tests__ readme .git* docker-compose* Dockerfile* && \
     rm -rf jest.* eslint.* .env.local .env.development
 
+ARG MY_PUBLIC_DOMAIN_URL
+ARG MY_IMMICH_BASE_URL
 # Set build environment variables to prevent URL errors during build
 ENV NODE_ENV=production
 # PUBLIC_DOMAIN is used in the stage of building the application
-ENV NEXT_PUBLIC_DOMAIN=https://photos.alicepatience.com
+ENV NEXT_PUBLIC_DOMAIN=$MY_PUBLIC_DOMAIN_URL
+ENV IMMICH_BASE_URL=$MY_IMMICH_BASE_URL
 ENV NEXT_PUBLIC_GRID_ASPECT_RATIO=1.5
 ENV NEXT_PUBLIC_ALLOW_PUBLIC_DOWNLOADS=1
 # not sure
@@ -81,6 +84,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.ts ./
 
 # Switch to non-root user
 USER nextjs

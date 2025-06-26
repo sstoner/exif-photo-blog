@@ -7,7 +7,13 @@ import Link from 'next/link';
 import { SHOW_REPO_LINK } from '@/app/config';
 import RepoLink from '../components/RepoLink';
 import { usePathname } from 'next/navigation';
-import { IMMICH_SHARE_KEY_COOKIE, PATH_ADMIN_PHOTOS, PATH_SIGN_OUT, isPathAdmin, isPathSignIn } from './paths';
+import {
+  IMMICH_SHARE_KEY_COOKIE,
+  PATH_ADMIN_PHOTOS,
+  PATH_SIGN_OUT,
+  isPathAdmin,
+  isPathSignIn,
+} from './paths';
 import SubmitButtonWithStatus from '@/components/SubmitButtonWithStatus';
 import { signOutAction } from '@/auth/actions';
 import AnimateItems from '@/components/AnimateItems';

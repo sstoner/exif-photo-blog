@@ -7,7 +7,6 @@ import {
   PATH_ADMIN_PHOTOS,
   PATH_OG,
   PATH_OG_SAMPLE,
-  PATH_SIGN_IN,
   PATH_SIGN_OUT,
   PREFIX_PHOTO,
   PREFIX_TAG,
@@ -24,14 +23,6 @@ export async function middleware(request: NextRequest, response: NextResponse) {
   const protocol = request.headers.get('x-forwarded-proto') ||
     (host?.includes('localhost') ? 'http' : 'https');
   const baseUrl = `${protocol}://${host}`;
-
-  if (process.env.USE_IMMICH_BACKEND === 'true' && pathname.startsWith(PATH_SIGN_OUT)) {
-    let response = NextResponse.redirect(new URL('/', baseUrl));
-    response.cookies.delete(IMMICH_SHARE_KEY_COOKIE);
-    response.cookies.delete(IMMICH_SHARE_ALBUM_ID_COOKIE);
-
-    return response;
-  }
 
   if (process.env.USE_IMMICH_BACKEND === 'true' && pathname.startsWith(PATH_ADMIN)) {
     // simply redirect to the "home-page"

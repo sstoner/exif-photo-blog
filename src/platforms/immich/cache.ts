@@ -16,7 +16,7 @@ import {
 
 export const KEY_IMMICH = 'immich';
 
-// --- Internal implementation functions ---
+const CacheStaleTime = 5 * 60;
 
 function getUniqueTagsInternal(photos: Photo[]): Tags {
   const tagMap = new Map<string, {
@@ -45,7 +45,6 @@ function getUniqueTagsInternal(photos: Photo[]): Tags {
     });
   });
 
-  // 转换为目标格式并按标签名称排序
   const result = Array.from(tagMap.entries())
     .map(([tag, { count, lastModified }]) => ({
       tag,
@@ -236,6 +235,7 @@ export const getUniqueLensesCached = (
     albumId,
     sharedKey,
     ...getPhotosCacheKeys(options)],
+  { revalidate: CacheStaleTime },
 );
 
 export const getUniqueFocalLengthsCached = (
@@ -250,6 +250,7 @@ export const getUniqueFocalLengthsCached = (
     albumId,
     sharedKey,
     ...getPhotosCacheKeys(options)],
+  { revalidate: CacheStaleTime },
 );
 
 export const getPhotosCached = (
@@ -332,6 +333,7 @@ export const getPhotosCached = (
     albumId,
     sharedKey,
     ...getPhotosCacheKeys(options)],
+  { revalidate: CacheStaleTime },
 );
 
 export const getPhotosNearIdCached = (
@@ -372,6 +374,7 @@ export const getPhotosNearIdCached = (
     albumId,
     sharedKey,
     ...getPhotosCacheKeys(options)],
+  { revalidate: CacheStaleTime },
 );
 
 export const getPhotosMetaCached = (
@@ -411,6 +414,7 @@ export const getPhotosMetaCached = (
     albumId,
     sharedKey,
     ...getPhotosCacheKeys(options)],
+  { revalidate: CacheStaleTime },
 );
 
 export const applyLocalPagination = <T>(

@@ -9,7 +9,10 @@ import {
 } from '@/utility/exif-format';
 import { formatDateForPostgres } from '@/utility/date';
 import { generatePhotoSyncStatus } from '@/photo/sync';
-import { GRID_ASPECT_RATIO, IMMICH_BASE_URL } from '@/app/config';
+import {
+  GRID_ASPECT_RATIO,
+  IMMICH_BASE_URL,
+} from '@/app/config';
 import { thumbHashToDataURL } from 'thumbhash';
 
 export const decodeBase64 = (data: string) =>
@@ -48,10 +51,12 @@ export const convertImmichAssetToPhoto = (
     takenAt: new Date(exif?.dateTimeOriginal || asset.fileCreatedAt),
     // export interface PhotoDbInsert extends PhotoExif
     id: asset.id,
-    url: `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
+    url: process.env.IMMICH_PHOTO_ORIGINAL ?
+      `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
+      `original?key=${sharedKey}` :
+      `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
       `thumbnail?size=${size}&key=${sharedKey}`,
     extension: asset.originalPath.split('.').pop()?.toLowerCase() || 'jpg',
-    //blurData: `/api/immich/assets/${asset.id}/blur`,
     blurData: thumbHashToDataURL(decodeBase64(asset.thumbhash)),
     title: asset.originalFileName?.replace(/\.[^/.]+$/, '') || '',
     caption: exif?.description || '',

@@ -14,6 +14,9 @@ export const IMMICH_DEFAULT_ALBUM_ID = process.env.IMMICH_DEFAULT_ALBUM_ID;
 export const IMMICH_DEFAULT_SHARE_KEY = process.env.IMMICH_DEFAULT_SHARE_KEY;
 export const IMMICH_BASE_URL = process.env.IMMICH_BASE_URL;
 export const IMMICH_API_KEY = process.env.IMMICH_API_KEY;
+export const IMMICH_PHOTO_ORIGINAL =
+  process.env.IMMICH_PHOTO_ORIGINAL === 'true' ||
+  process.env.NEXT_PUBLIC_IMMICH_PHOTO_ORIGINAL === 'true';
 
 export const USE_IMMICH_BACKEND = process.env.USE_IMMICH_BACKEND === 'true';
 

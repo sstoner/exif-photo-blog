@@ -13,6 +13,7 @@ export const PATH_FEED = '/feed';
 export const PATH_ADMIN = '/admin';
 export const PATH_API = '/api';
 export const PATH_SIGN_IN = '/sign-in';
+export const PATH_SIGN_OUT = '/sign-out';
 export const PATH_OG = '/og';
 
 // Feeds

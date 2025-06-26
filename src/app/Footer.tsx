@@ -7,13 +7,14 @@ import Link from 'next/link';
 import { SHOW_REPO_LINK } from '@/app/config';
 import RepoLink from '../components/RepoLink';
 import { usePathname } from 'next/navigation';
-import { PATH_ADMIN_PHOTOS, isPathAdmin, isPathSignIn } from './paths';
+import { IMMICH_SHARE_KEY_COOKIE, PATH_ADMIN_PHOTOS, PATH_SIGN_OUT, isPathAdmin, isPathSignIn } from './paths';
 import SubmitButtonWithStatus from '@/components/SubmitButtonWithStatus';
 import { signOutAction } from '@/auth/actions';
 import AnimateItems from '@/components/AnimateItems';
 import { useAppState } from '@/state/AppState';
 import Spinner from '@/components/Spinner';
 import { useAppText } from '@/i18n/state/client';
+import { getCookie } from '@/utility/cookie';
 
 export default function Footer() {
   const pathname = usePathname();
@@ -30,6 +31,10 @@ export default function Footer() {
   const showFooter = !isPathSignIn(pathname);
 
   const shouldAnimate = !isPathAdmin(pathname);
+
+  const shouldSignOut = (() => {
+    return !!getCookie(IMMICH_SHARE_KEY_COOKIE);
+  })();
 
   return (
     <AppGrid
@@ -62,9 +67,13 @@ export default function Footer() {
                     ? <Spinner size={16} className="translate-y-[2px]" />
                     : SHOW_REPO_LINK
                       ? <RepoLink />
-                      : <Link href={PATH_ADMIN_PHOTOS}>
-                        {appText.nav.admin}
-                      </Link>}
+                      : shouldSignOut
+                        ? <Link href={PATH_SIGN_OUT}>
+                          {appText.auth.signOut}
+                        </Link>
+                        : <Link href={PATH_ADMIN_PHOTOS}>
+                          {appText.nav.admin}
+                        </Link>}
               </div>
               <div className="flex items-center h-10">
                 <ThemeSwitcher />

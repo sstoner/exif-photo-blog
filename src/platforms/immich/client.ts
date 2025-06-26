@@ -148,11 +148,9 @@ export class ImmichApiClient {
       return await this.request<ImmichSharedLinkInfo>(
         `/shared-links/me?key=${sharedKey}`);
     } catch (error) {
-      console.error(`Error fetching shared link with key ${sharedKey}:`, error);
-      return {
-        album: undefined,
-        assets: [],
-      };
+      throw new Error(
+        `Failed to get shared link info for key "${sharedKey}": 
+        ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

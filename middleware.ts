@@ -1,13 +1,14 @@
 // middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_COOKIE,
+  IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_HEADER,
   IMMICH_SHARE_ALBUM_ID_COOKIE, IMMICH_SHARE_ALBUM_ID_HEADER,
   IMMICH_SHARE_KEY_COOKIE, IMMICH_SHARE_KEY_HEADER,
   PATH_ADMIN,
   PATH_ADMIN_PHOTOS,
   PATH_OG,
   PATH_OG_SAMPLE,
-  PATH_SIGN_OUT,
   PREFIX_PHOTO,
   PREFIX_TAG,
 } from '@/app/paths';
@@ -24,7 +25,8 @@ export async function middleware(request: NextRequest, response: NextResponse) {
     (host?.includes('localhost') ? 'http' : 'https');
   const baseUrl = `${protocol}://${host}`;
 
-  if (process.env.USE_IMMICH_BACKEND === 'true' && pathname.startsWith(PATH_ADMIN)) {
+  if (process.env.USE_IMMICH_BACKEND === 'true' &&
+    pathname.startsWith(PATH_ADMIN)) {
     // simply redirect to the "home-page"
     return NextResponse.redirect(new URL('/grid', baseUrl));
   }
@@ -55,9 +57,10 @@ export async function middleware(request: NextRequest, response: NextResponse) {
     let shareContext;
     try {
       shareContext = await validateShareKey(shareKey);
-    } catch (error) {
-      const errorMessage = "Failed to validate share key";
-      return NextResponse.redirect(new URL(`/unauthorized?reason=${errorMessage}`, baseUrl));
+    } catch {
+      const errorMessage = 'Failed to validate share key';
+      return NextResponse.redirect(
+        new URL(`/unauthorized?reason=${errorMessage}`, baseUrl));
     }
 
     if (!shareContext) {
@@ -65,10 +68,11 @@ export async function middleware(request: NextRequest, response: NextResponse) {
     }
 
     if (shareContext.expiresAt && new Date() > shareContext.expiresAt) {
-      return NextResponse.redirect(new URL('/unauthorized?reason=expired', baseUrl));
+      return NextResponse.redirect(
+        new URL('/unauthorized?reason=expired', baseUrl));
     }
 
-    let response = NextResponse.redirect(new URL('/', baseUrl));
+    const response = NextResponse.redirect(new URL('/', baseUrl));
     response.cookies.set(IMMICH_SHARE_KEY_COOKIE, shareKey, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
@@ -76,7 +80,7 @@ export async function middleware(request: NextRequest, response: NextResponse) {
       path: '/',
       maxAge: shareContext.expiresAt
         ? Math.floor((shareContext.expiresAt.getTime() - Date.now()) / 1000)
-        : 240 * 60 * 60
+        : 240 * 60 * 60,
     });
     response.cookies.set(IMMICH_SHARE_ALBUM_ID_COOKIE, shareContext.albumId, {
       httpOnly: false,
@@ -85,27 +89,48 @@ export async function middleware(request: NextRequest, response: NextResponse) {
       path: '/',
       maxAge: shareContext.expiresAt
         ? Math.floor((shareContext.expiresAt.getTime() - Date.now()) / 1000)
-        : 240 * 60 * 60
+        : 240 * 60 * 60,
     });
+    response.cookies.set(
+      IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_COOKIE,
+      shareContext.allowDownload ? 'true' : 'false',
+      {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: shareContext.expiresAt
+          ? Math.floor((shareContext.expiresAt.getTime() - Date.now()) / 1000)
+          : 240 * 60 * 60,
+      });
+
 
     // set headers for first request
     response.headers.set(IMMICH_SHARE_KEY_HEADER, shareKey);
     response.headers.set(IMMICH_SHARE_ALBUM_ID_HEADER, shareContext.albumId);
-
+    response.headers.set(
+      IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_HEADER,
+      shareContext.allowDownload ? 'true' : 'false');
     return response;
   }
 
   if (process.env.USE_IMMICH_BACKEND === 'true') {
     const shareKey = request.cookies.get(IMMICH_SHARE_KEY_COOKIE)?.value;
     const albumId = request.cookies.get(IMMICH_SHARE_ALBUM_ID_COOKIE)?.value;
+    const allowDownload = request.cookies.get(
+      IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_COOKIE)?.value;
 
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set(IMMICH_SHARE_ALBUM_ID_HEADER, albumId || '');
     requestHeaders.set(IMMICH_SHARE_KEY_HEADER, shareKey || '');
+    requestHeaders.set(
+      IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_HEADER,
+      allowDownload === 'false' ? 'false' : 'true');
+
     return NextResponse.next({
       request: {
-        headers: requestHeaders
-      }
+        headers: requestHeaders,
+      },
     });
   }
 

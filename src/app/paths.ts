@@ -40,9 +40,13 @@ export const PREFIX_FOCAL_LENGTH = '/focal';
 // Cookie keys for Immich sharing
 export const IMMICH_SHARE_KEY_COOKIE = 'immich-share-key';
 export const IMMICH_SHARE_ALBUM_ID_COOKIE = 'immich-share-album-id';
+export const IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_COOKIE =
+  'immich-share-album-allow-download';
 
 export const IMMICH_SHARE_KEY_HEADER = 'x-immich-share-key';
 export const IMMICH_SHARE_ALBUM_ID_HEADER = 'x-immich-share-album-id';
+export const IMMICH_SHARE_ALBUM_ALLOW_DOWNLOAD_HEADER =
+  'x-immich-share-album-allow-download';
 
 // Dynamic paths
 const PATH_PHOTO_DYNAMIC = `${PREFIX_PHOTO}/[photoId]`;

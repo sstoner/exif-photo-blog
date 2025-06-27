@@ -1,98 +1,107 @@
-import { Photo } from '@/photo';
-import { ImmichAsset } from './client';
-import { formatFocalLength } from '@/focal';
+import { Photo } from "@/photo";
+import { ImmichAsset } from "./client";
+import { formatFocalLength } from "@/focal";
 import {
   formatAperture,
   formatExposureCompensation,
   formatExposureTime,
   formatIso,
-} from '@/utility/exif-format';
-import { formatDateForPostgres } from '@/utility/date';
-import { generatePhotoSyncStatus } from '@/photo/sync';
+} from "@/utility/exif-format";
+import { formatDateForPostgres } from "@/utility/date";
+import { generatePhotoSyncStatus } from "@/photo/sync";
 import {
+  ALLOW_PUBLIC_DOWNLOADS,
   GRID_ASPECT_RATIO,
   IMMICH_BASE_URL,
-} from '@/app/config';
-import { thumbHashToDataURL } from 'thumbhash';
+} from "@/app/config";
+import { thumbHashToDataURL } from "thumbhash";
+import { ShareContext } from "./auth/validation";
 
 export const decodeBase64 = (data: string) =>
   Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
 
 export const convertImmichAssetToPhoto = (
   asset: ImmichAsset,
-  size: string = 'thumbnail',
-  sharedKey: string,
+  size: string = "thumbnail",
+  shareContext?: ShareContext
 ): Photo => {
   const exif = asset.exifInfo;
   return {
-    // export interface Photo extends Omit<PhotoDb, 'recipeData'> 
+    // export interface Photo extends Omit<PhotoDb, 'recipeData'>
     focalLengthFormatted: formatFocalLength(exif?.focalLength),
     focalLengthIn35MmFormatFormatted: undefined,
     fNumberFormatted: formatAperture(exif?.fNumber),
     isoFormatted: formatIso(exif?.iso),
     exposureTimeFormatted: formatExposureTime(
-      exif?.exposureTime ? parseFloat(exif.exposureTime) : undefined,
+      exif?.exposureTime ? parseFloat(exif.exposureTime) : undefined
     ),
     exposureCompensationFormatted: formatExposureCompensation(
-      exif?.exposureCompensation ?
-        parseFloat(exif.exposureCompensation) : undefined,
+      exif?.exposureCompensation
+        ? parseFloat(exif.exposureCompensation)
+        : undefined
     ),
     takenAtNaiveFormatted: formatDateForPostgres(
-      new Date(exif?.dateTimeOriginal ||
-        asset.localDateTime ||
-        asset.fileCreatedAt),
+      new Date(
+        exif?.dateTimeOriginal || asset.localDateTime || asset.fileCreatedAt
+      )
     ),
     tags: asset?.tags || [],
     recipeData: undefined,
     syncStatus: generatePhotoSyncStatus(dummyPhotoDb),
-    // export interface PhotoDb extends Omit<PhotoDbInsert, 'takenAt' | 'tags'> 
+    // export interface PhotoDb extends Omit<PhotoDbInsert, 'takenAt' | 'tags'>
     updatedAt: new Date(asset.updatedAt),
     createdAt: new Date(asset.fileCreatedAt),
     takenAt: new Date(exif?.dateTimeOriginal || asset.fileCreatedAt),
     // export interface PhotoDbInsert extends PhotoExif
     id: asset.id,
-    url: process.env.IMMICH_PHOTO_ORIGINAL ?
-      `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
-      `original?key=${sharedKey}` :
-      `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
-      `thumbnail?size=${size}&key=${sharedKey}`,
-    extension: asset.originalPath.split('.').pop()?.toLowerCase() || 'jpg',
+    url:
+      shareContext?.allowDownload && ALLOW_PUBLIC_DOWNLOADS
+        ? `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
+          `original?key=${shareContext.shareKey}`
+        : `${IMMICH_BASE_URL}/api/assets/${asset.id}/` +
+          `thumbnail?size=${size}&key=${shareContext?.shareKey}`,
+    extension: asset.originalPath.split(".").pop()?.toLowerCase() || "jpg",
     blurData: thumbHashToDataURL(decodeBase64(asset.thumbhash)),
-    title: asset.originalFileName?.replace(/\.[^/.]+$/, '') || '',
-    caption: exif?.description || '',
-    semanticDescription: exif?.description || '',
-    recipeTitle: 'Not available',
-    locationName: [exif?.city, exif?.state, exif?.country].
-      filter(Boolean).join(', '),
+    title: asset.originalFileName?.replace(/\.[^/.]+$/, "") || "",
+    caption: exif?.description || "",
+    semanticDescription: exif?.description || "",
+    recipeTitle: "Not available",
+    locationName: [exif?.city, exif?.state, exif?.country]
+      .filter(Boolean)
+      .join(", "),
     priorityOrder: undefined,
     hidden: asset.isArchived,
     takenAtNaive: formatDateForPostgres(
-      new Date(exif?.dateTimeOriginal ||
-        asset.localDateTime ||
-        asset.fileCreatedAt)),
+      new Date(
+        exif?.dateTimeOriginal || asset.localDateTime || asset.fileCreatedAt
+      )
+    ),
     // PhotoExif
-    aspectRatio: exif?.exifImageWidth && exif?.exifImageHeight
-      ? exif.exifImageWidth / exif.exifImageHeight
-      : GRID_ASPECT_RATIO,
-    make: exif?.make || '',
-    model: exif?.model || '',
+    aspectRatio:
+      exif?.exifImageWidth && exif?.exifImageHeight
+        ? exif.exifImageWidth / exif.exifImageHeight
+        : GRID_ASPECT_RATIO,
+    make: exif?.make || "",
+    model: exif?.model || "",
     focalLength: exif?.focalLength ? Math.round(exif.focalLength) : undefined,
     focalLengthIn35MmFormat: undefined,
-    lensMake: exif?.lensMake || '',
-    lensModel: exif?.lensModel || '',
+    lensMake: exif?.lensMake || "",
+    lensModel: exif?.lensModel || "",
     fNumber: exif?.fNumber,
     iso: exif?.iso,
     exposureTime: exif?.exposureTime
-      ? (exif.exposureTime.includes('/')
+      ? exif.exposureTime.includes("/")
         ? (() => {
-          const [numerator, denominator] = exif.exposureTime.
-            split('/').map(Number);
-          return denominator ? numerator / denominator : undefined;
-        })()
-        : parseFloat(exif.exposureTime))
+            const [numerator, denominator] = exif.exposureTime
+              .split("/")
+              .map(Number);
+            return denominator ? numerator / denominator : undefined;
+          })()
+        : parseFloat(exif.exposureTime)
       : undefined,
-    exposureCompensation: exif?.exposureCompensation ?
-      parseFloat(exif.exposureCompensation) : undefined,
+    exposureCompensation: exif?.exposureCompensation
+      ? parseFloat(exif.exposureCompensation)
+      : undefined,
     latitude: exif?.latitude || 0,
     longitude: exif?.longitude || 0,
     film: undefined,
@@ -104,9 +113,9 @@ const dummyPhotoDb = {
   createdAt: new Date(),
   takenAt: new Date(),
   tags: null,
-  id: '',
-  url: '',
-  extension: '',
+  id: "",
+  url: "",
+  extension: "",
   takenAtNaive: new Date().toDateString(),
   aspectRatio: 1.77,
 };

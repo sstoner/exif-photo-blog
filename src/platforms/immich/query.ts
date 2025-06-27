@@ -1,11 +1,11 @@
-import { Photo, PhotoDateRange } from '@/photo';
-import { convertImmichAssetToPhoto } from './mapper';
-import { Tags } from '@/tag';
-import { Cameras } from '@/camera';
-import { Lenses } from '@/lens';
-import { FocalLengths } from '@/focal';
-import { PhotoProvider } from '@/photo/provider/interface';
-import { GetPhotosOptions } from '@/photo/db';
+import { Photo, PhotoDateRange } from "@/photo";
+import { convertImmichAssetToPhoto } from "./mapper";
+import { Tags } from "@/tag";
+import { Cameras } from "@/camera";
+import { Lenses } from "@/lens";
+import { FocalLengths } from "@/focal";
+import { PhotoProvider } from "@/photo/provider/interface";
+import { GetPhotosOptions } from "@/photo/db";
 import {
   getPhotosCached,
   getUniqueTagsCached,
@@ -14,14 +14,9 @@ import {
   getUniqueFocalLengthsCached,
   getPhotosNearIdCached,
   getPhotosMetaCached,
-} from './cache';
-import {
-  getAlbumId,
-  getSharedKey,
-} from './resolver';
-import {
-  ImmichApiClient,
-} from '@/platforms/immich/client';
+} from "./cache";
+import { getShareContext } from "./resolver";
+import { ImmichApiClient } from "@/platforms/immich/client";
 
 export class ImmichProvider implements PhotoProvider {
   private api: ImmichApiClient;
@@ -32,75 +27,74 @@ export class ImmichProvider implements PhotoProvider {
     this.albumId = albumId;
   }
 
-  async getPhotos(options: GetPhotosOptions): Promise<Photo[]
-  > {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
-    const photos = await getPhotosCached(
-      options, albumId, albumSharedKey)();
+  async getPhotos(options: GetPhotosOptions): Promise<Photo[]> {
+    const shareContext = await getShareContext();
+    const photos = await getPhotosCached(options, shareContext)();
     return photos;
   }
 
-
   async getUniqueTags(): Promise<Tags> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
+    const shareContext = await getShareContext();
     const tags = await getUniqueTagsCached(
-      { hidden: 'exclude' }, albumId, albumSharedKey)();
+      { hidden: "exclude" },
+      shareContext
+    )();
     return tags;
   }
   async getUniqueCameras(): Promise<Cameras> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
+    const shareContext = await getShareContext();
     const cameras = await getUniqueCamerasCached(
-      { hidden: 'exclude' }, albumId, albumSharedKey,
+      { hidden: "exclude" },
+      shareContext
     )();
     return cameras;
   }
 
   async getUniqueLenses(): Promise<Lenses> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
+    const shareContext = await getShareContext();
     const lenses = await getUniqueLensesCached(
-      { hidden: 'exclude' }, albumId, albumSharedKey)();
+      { hidden: "exclude" },
+      shareContext
+    )();
     return lenses;
   }
 
   async getUniqueFocalLengths(): Promise<FocalLengths> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
+    const shareContext = await getShareContext();
     const focalLengths = await getUniqueFocalLengthsCached(
-      { hidden: 'exclude' }, albumId, albumSharedKey)();
+      { hidden: "exclude" },
+      shareContext
+    )();
     return focalLengths;
   }
 
   async getPhotosNearId(
     photoId: string,
-    options: GetPhotosOptions,
+    options: GetPhotosOptions
   ): Promise<{ photos: Photo[]; indexNumber?: number }> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
+    const shareContext = await getShareContext();
     const result = await getPhotosNearIdCached(
-      photoId, options, albumId, albumSharedKey)();
+      photoId,
+      options,
+      shareContext
+    )();
     return result;
   }
 
   async getPhotosMeta(options: GetPhotosOptions): Promise<{
     count: number;
-    dateRange?: PhotoDateRange
+    dateRange?: PhotoDateRange;
   }> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
-    const meta = await getPhotosMetaCached(
-      options, albumId, albumSharedKey)();
+    const shareContext = await getShareContext();
+    const meta = await getPhotosMetaCached(options, shareContext)();
     return meta;
   }
 
-  async getPublicPhotoIds({ limit }:
-    { limit?: number } = {}): Promise<string[]> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
-    const photos = await getPhotosCached({}, albumId, albumSharedKey)();
+  async getPublicPhotoIds({ limit }: { limit?: number } = {}): Promise<
+    string[]
+  > {
+    const shareContext = await getShareContext();
+    const photos = await getPhotosCached({}, shareContext)();
     let photoIds = photos.map((photo: Photo) => photo.id);
     if (limit && limit > 0) {
       photoIds = photoIds.slice(0, limit);
@@ -108,30 +102,35 @@ export class ImmichProvider implements PhotoProvider {
     return photoIds;
   }
 
-  async getPhotoIdsAndUpdatedAt():
-    Promise<Array<{ id: string; updatedAt: Date }>> {
-    const albumId = await getAlbumId();
-    const albumSharedKey = await getSharedKey();
-    const photos = await getPhotosCached({}, albumId, albumSharedKey)();
+  async getPhotoIdsAndUpdatedAt(): Promise<
+    Array<{ id: string; updatedAt: Date }>
+  > {
+    const shareContext = await getShareContext();
+    const photos = await getPhotosCached({}, shareContext)();
     const result = photos.map((photo: Photo) => ({
       id: photo.id,
       updatedAt: photo.updatedAt,
     }));
 
-
     return result;
   }
 
-  async getPhoto(id: string,
-    includeHidden?: boolean): Promise<Photo | undefined> {
+  async getPhoto(
+    id: string,
+    includeHidden?: boolean
+  ): Promise<Photo | undefined> {
     const assetId = id;
-    const sharedKey = await getSharedKey();
-    const asset = await this.api.getAssetInfo(assetId, false, sharedKey);
+    const shareContext = await getShareContext();
+    const asset = await this.api.getAssetInfo(
+      assetId,
+      false,
+      shareContext.shareKey
+    );
     if (!asset) {
       return undefined;
     }
 
-    const photo = convertImmichAssetToPhoto(asset, 'preview', sharedKey);
+    const photo = convertImmichAssetToPhoto(asset, "preview", shareContext);
     if (!includeHidden && photo.hidden) {
       return undefined;
     }
@@ -139,14 +138,16 @@ export class ImmichProvider implements PhotoProvider {
   }
 
   async getRecipeTitleForData(
-    _data: string | object, _film: string): Promise<string | undefined> {
+    _data: string | object,
+    _film: string
+  ): Promise<string | undefined> {
     return undefined;
   }
 
   async getPhotosNeedingRecipeTitleCount(
     _data: string,
     _film: string,
-    _photoIdToExclude?: string,
+    _photoIdToExclude?: string
   ): Promise<number> {
     return 0;
   }

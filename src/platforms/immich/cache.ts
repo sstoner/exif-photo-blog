@@ -1,32 +1,36 @@
-import { unstable_cache } from 'next/cache';
-import { Photo, PhotoDateRange } from '@/photo';
-import { Tags } from '@/tag';
-import { Cameras, createCameraKey } from '@/camera';
-import { Lenses, createLensKey } from '@/lens';
-import { FocalLengths } from '@/focal';
-import { GetPhotosOptions, PHOTO_DEFAULT_LIMIT } from '@/photo/db';
+import { unstable_cache } from "next/cache";
+import { Photo, PhotoDateRange } from "@/photo";
+import { Tags } from "@/tag";
+import { Cameras, createCameraKey } from "@/camera";
+import { Lenses, createLensKey } from "@/lens";
+import { FocalLengths } from "@/focal";
+import { GetPhotosOptions, PHOTO_DEFAULT_LIMIT } from "@/photo/db";
 // import { getPhotosCacheKeys } from '@/photo/cache';
-import { parameterize } from '@/utility/string';
-import { convertImmichAssetToPhoto } from './mapper';
-import { getImmichClient, ImmichAsset } from './client';
+import { parameterize } from "@/utility/string";
+import { convertImmichAssetToPhoto } from "./mapper";
+import { getImmichClient, ImmichAsset } from "./client";
 import {
   IMMICH_DEFAULT_ALBUM_ID,
   IMMICH_DEFAULT_SHARE_KEY,
-} from '@/app/config';
+} from "@/app/config";
+import { ShareContext } from "./auth/validation";
 
-export const KEY_IMMICH = 'immich';
+export const KEY_IMMICH = "immich";
 
 const CacheStaleTime = 5 * 60;
 
 function getUniqueTagsInternal(photos: Photo[]): Tags {
-  const tagMap = new Map<string, {
-    count: number;
-    lastModified: Date;
-  }>();
+  const tagMap = new Map<
+    string,
+    {
+      count: number;
+      lastModified: Date;
+    }
+  >();
 
-  photos.forEach(photo => {
-    photo.tags.forEach(tag => {
-      if (tag && tag.trim() !== '') {
+  photos.forEach((photo) => {
+    photo.tags.forEach((tag) => {
+      if (tag && tag.trim() !== "") {
         const trimmedTag = tag.trim();
 
         if (tagMap.has(trimmedTag)) {
@@ -57,16 +61,23 @@ function getUniqueTagsInternal(photos: Photo[]): Tags {
 }
 
 function getUniqueCamerasInternal(photos: Photo[]): Cameras {
-  const cameraMap = new Map<string, {
-    make: string;
-    model: string;
-    count: number;
-    lastModified: Date;
-  }>();
+  const cameraMap = new Map<
+    string,
+    {
+      make: string;
+      model: string;
+      count: number;
+      lastModified: Date;
+    }
+  >();
 
-  photos.forEach(photo => {
-    if (photo.make && photo.model &&
-      photo.make.trim() !== '' && photo.model.trim() !== '') {
+  photos.forEach((photo) => {
+    if (
+      photo.make &&
+      photo.model &&
+      photo.make.trim() !== "" &&
+      photo.model.trim() !== ""
+    ) {
       const cameraKey = createCameraKey({
         make: photo.make,
         model: photo.model,
@@ -107,17 +118,18 @@ function getUniqueCamerasInternal(photos: Photo[]): Cameras {
 }
 
 function getUniqueLensesInternal(photos: Photo[]): Lenses {
-  const lensMap = new Map<string, {
-    make: string;
-    model: string;
-    count: number;
-    lastModified: Date;
-  }>();
+  const lensMap = new Map<
+    string,
+    {
+      make: string;
+      model: string;
+      count: number;
+      lastModified: Date;
+    }
+  >();
 
-  photos.forEach(photo => {
-    if (photo.lensMake ||
-      photo.lensModel &&
-      photo.lensModel.trim() !== '') {
+  photos.forEach((photo) => {
+    if (photo.lensMake || (photo.lensModel && photo.lensModel.trim() !== "")) {
       const lensKey = createLensKey({
         make: photo.lensMake,
         model: photo.lensModel,
@@ -132,8 +144,8 @@ function getUniqueLensesInternal(photos: Photo[]): Lenses {
         }
       } else {
         lensMap.set(lensKey, {
-          make: photo.lensMake ?? '',
-          model: photo.lensModel ?? '',
+          make: photo.lensMake ?? "",
+          model: photo.lensModel ?? "",
           count: 1,
           lastModified: photo.updatedAt,
         });
@@ -158,12 +170,15 @@ function getUniqueLensesInternal(photos: Photo[]): Lenses {
 }
 
 function getUniqueFocalLengthsInternal(photos: Photo[]): FocalLengths {
-  const focalLengthMap = new Map<number, {
-    count: number;
-    lastModified: Date;
-  }>();
+  const focalLengthMap = new Map<
+    number,
+    {
+      count: number;
+      lastModified: Date;
+    }
+  >();
 
-  photos.forEach(photo => {
+  photos.forEach((photo) => {
     if (photo.focalLength !== null && photo.focalLength !== undefined) {
       const focalLength = photo.focalLength;
 
@@ -194,237 +209,267 @@ function getUniqueFocalLengthsInternal(photos: Photo[]): FocalLengths {
   return result;
 }
 
-
 export const getUniqueTagsCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<Tags> => {
-    const photos = await getPhotosCached(options, albumId, sharedKey)();
+  context: ShareContext
+) =>
+  unstable_cache(async (): Promise<Tags> => {
+    const photos = await getPhotosCached(options, context)();
     return getUniqueTagsInternal(photos);
-  },
-  ['immich-unique-tags',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-);
+  }, [
+    "immich-unique-tags",
+    context.albumId,
+    context.shareKey,
+    ...getPhotosCacheKeys(options),
+  ]);
 
 export const getUniqueCamerasCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<Cameras> => {
-    const photos = await getPhotosCached(options, albumId, sharedKey)();
+  context: ShareContext
+) =>
+  unstable_cache(async (): Promise<Cameras> => {
+    const photos = await getPhotosCached(options, context)();
     return getUniqueCamerasInternal(photos);
-  },
-  ['immich-unique-cameras',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-);
+  }, [
+    "immich-unique-cameras",
+    context.albumId,
+    context.shareKey,
+    ...getPhotosCacheKeys(options),
+  ]);
 
 export const getUniqueLensesCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<Lenses> => {
-    const photos = await getPhotosCached(options, albumId, sharedKey)();
-    return getUniqueLensesInternal(photos);
-  },
-  ['immich-unique-lenses',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-  { revalidate: CacheStaleTime },
-);
+  context: ShareContext
+) =>
+  unstable_cache(
+    async (): Promise<Lenses> => {
+      const photos = await getPhotosCached(options, context)();
+      return getUniqueLensesInternal(photos);
+    },
+    [
+      "immich-unique-lenses",
+      context.albumId,
+      context.shareKey,
+      ...getPhotosCacheKeys(options),
+    ],
+    { revalidate: CacheStaleTime }
+  );
 
 export const getUniqueFocalLengthsCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<FocalLengths> => {
-    const photos = await getPhotosCached(options, albumId, sharedKey)();
-    return getUniqueFocalLengthsInternal(photos);
-  },
-  ['immich-unique-focal-lengths',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-  { revalidate: CacheStaleTime },
-);
+  context: ShareContext
+) =>
+  unstable_cache(
+    async (): Promise<FocalLengths> => {
+      const photos = await getPhotosCached(options, context)();
+      return getUniqueFocalLengthsInternal(photos);
+    },
+    [
+      "immich-unique-focal-lengths",
+      context.albumId,
+      context.shareKey,
+      ...getPhotosCacheKeys(options),
+    ],
+    { revalidate: CacheStaleTime }
+  );
 
 export const getPhotosCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<Photo[]> => {
-    let assets: ImmichAsset[] = [];
-    let source = 'album';
-    if (albumId != '') {
-      const immichAlbumInfo = await getImmichClient().
-        getAlbumInfo(albumId, false);
-      if (!immichAlbumInfo) {
-        return [];
-      }
-      if (!immichAlbumInfo.assets) {
-        return [];
-      }
-      assets = immichAlbumInfo.assets;
-      source = 'shared-album';
-    } else {
-      const sharelinkInfo = await getImmichClient().
-        getSharedLinkInfo(sharedKey);
-      assets = sharelinkInfo?.assets || [];
-      source = 'shared-non-album';
-      if (assets.length == 0) {
-        assets = (await getImmichClient().
-          getAlbumInfo(IMMICH_DEFAULT_ALBUM_ID || '', false))?.assets || [];
-        source = 'default-album';
-      }
-    }
-
-    assets = assets.filter((asset: ImmichAsset) => {
-      if (!options) {
-        return true;
-      }
-      // camera
-      if (options.camera &&
-          (parameterize(asset.exifInfo?.make || '') !==
-            parameterize(options.camera?.make || '') ||
-            parameterize(asset.exifInfo?.model || '') !==
-            parameterize(options.camera?.model || ''))) {
-        return false;
+  context: ShareContext
+) =>
+  unstable_cache(
+    async (): Promise<Photo[]> => {
+      let assets: ImmichAsset[] = [];
+      let source = "album";
+      if (context.albumId != "") {
+        const immichAlbumInfo = await getImmichClient().getAlbumInfo(
+          context.albumId,
+          false
+        );
+        if (!immichAlbumInfo) {
+          return [];
+        }
+        if (!immichAlbumInfo.assets) {
+          return [];
+        }
+        assets = immichAlbumInfo.assets;
+        source = "shared-album";
+      } else {
+        const sharelinkInfo = await getImmichClient().getSharedLinkInfo(
+          context.shareKey
+        );
+        assets = sharelinkInfo?.assets || [];
+        source = "shared-non-album";
+        if (assets.length == 0) {
+          assets =
+            (
+              await getImmichClient().getAlbumInfo(
+                IMMICH_DEFAULT_ALBUM_ID || "",
+                false
+              )
+            )?.assets || [];
+          source = "default-album";
+        }
       }
 
-      if (options.lens) {
-        const lensModelMatches = parameterize(
-          asset.exifInfo?.lensModel || '') ===
-            parameterize(options.lens.model || '');
-
-        if (!options.lens.make || options.lens.make.trim() === '') {
-          return lensModelMatches;
+      assets = assets.filter((asset: ImmichAsset) => {
+        if (!options) {
+          return true;
+        }
+        // camera
+        if (
+          options.camera &&
+          (parameterize(asset.exifInfo?.make || "") !==
+            parameterize(options.camera?.make || "") ||
+            parameterize(asset.exifInfo?.model || "") !==
+              parameterize(options.camera?.model || ""))
+        ) {
+          return false;
         }
 
-        const lensMakeMatches = parameterize(
-          asset.exifInfo?.lensMake || '') ===
-            parameterize(options.lens.make || '');
-        return lensMakeMatches && lensModelMatches;
+        if (options.lens) {
+          const lensModelMatches =
+            parameterize(asset.exifInfo?.lensModel || "") ===
+            parameterize(options.lens.model || "");
+
+          if (!options.lens.make || options.lens.make.trim() === "") {
+            return lensModelMatches;
+          }
+
+          const lensMakeMatches =
+            parameterize(asset.exifInfo?.lensMake || "") ===
+            parameterize(options.lens.make || "");
+          return lensMakeMatches && lensModelMatches;
+        }
+
+        if (options.focal && asset.exifInfo?.focalLength !== options.focal) {
+          return false;
+        }
+
+        return true;
+      });
+
+      if (options?.limit || options?.offset) {
+        assets = applyLocalPagination(assets, options);
       }
 
-      if (options.focal && asset.exifInfo?.focalLength !== options.focal) {
-        return false;
-      }
-
-      return true;
-    });
-
-    if (options?.limit || options?.offset) {
-      assets = applyLocalPagination(assets, options);
-    }
-
-    const photos = assets.map((asset: ImmichAsset) =>
-      convertImmichAssetToPhoto(
-        asset, 'preview',
-        source !== 'default-album' ?
-          (sharedKey || '') : (IMMICH_DEFAULT_SHARE_KEY || '')));
-    return photos;
-  },
-  ['immich-photos',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-  { revalidate: CacheStaleTime },
-);
+      const photos = assets.map((asset: ImmichAsset) =>
+        convertImmichAssetToPhoto(asset, "preview", {
+          shareKey:
+            source !== "default-album"
+              ? context.shareKey || ""
+              : IMMICH_DEFAULT_SHARE_KEY || "",
+          allowDownload: context.allowDownload,
+          albumId: context.albumId || IMMICH_DEFAULT_ALBUM_ID || "",
+        })
+      );
+      return photos;
+    },
+    [
+      "immich-photos",
+      context.albumId,
+      context.shareKey,
+      (context.allowDownload ?? false).toString(),
+      ...getPhotosCacheKeys(options),
+    ],
+    { revalidate: CacheStaleTime }
+  );
 
 export const getPhotosNearIdCached = (
   photoId: string,
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<{
-      photos: Photo[]; indexNumber?: number
+  context: ShareContext
+) =>
+  unstable_cache(
+    async (): Promise<{
+      photos: Photo[];
+      indexNumber?: number;
     }> => {
+      const { limit = 20 } = options;
+      const allPhotos = await getPhotosCached(
+        {
+          ...options,
+          limit: undefined,
+          offset: undefined,
+        },
+        context
+      )();
 
-    const { limit = 20 } = options;
-    const allPhotos = await getPhotosCached({
-      ...options,
-      limit: undefined,
-      offset: undefined,
-    }, albumId, sharedKey)();
+      const targetIndex = allPhotos.findIndex((photo) => photo.id === photoId);
 
-    const targetIndex = allPhotos.findIndex(photo => photo.id === photoId);
+      if (targetIndex === -1) {
+        return { photos: [], indexNumber: undefined };
+      }
 
-    if (targetIndex === -1) {
-      return { photos: [], indexNumber: undefined };
-    }
+      const startIndex = Math.max(0, targetIndex - 1);
+      const endIndex = Math.min(allPhotos.length, startIndex + limit);
 
-    const startIndex = Math.max(0, targetIndex - 1);
-    const endIndex = Math.min(allPhotos.length, startIndex + limit);
+      const nearbyPhotos = allPhotos.slice(startIndex, endIndex);
+      const indexNumber = targetIndex + 1; // 1-based index
 
-    const nearbyPhotos = allPhotos.slice(startIndex, endIndex);
-    const indexNumber = targetIndex + 1; // 1-based index
-
-    return {
-      photos: nearbyPhotos,
-      indexNumber,
-    };
-  },
-  ['immich-photos-near-id',
-    photoId,
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-  { revalidate: CacheStaleTime },
-);
+      return {
+        photos: nearbyPhotos,
+        indexNumber,
+      };
+    },
+    [
+      "immich-photos-near-id",
+      photoId,
+      context.albumId,
+      context.shareKey,
+      ...getPhotosCacheKeys(options),
+    ],
+    { revalidate: CacheStaleTime }
+  );
 
 export const getPhotosMetaCached = (
   options: GetPhotosOptions,
-  albumId: string,
-  sharedKey: string) => unstable_cache(
-  async (): Promise<{ count: number; dateRange?: PhotoDateRange }> => {
-    const photos = await getPhotosCached(options, albumId, sharedKey)();
-    const count = photos.length;
+  context: ShareContext
+) =>
+  unstable_cache(
+    async (): Promise<{ count: number; dateRange?: PhotoDateRange }> => {
+      const photos = await getPhotosCached(options, context)();
+      const count = photos.length;
 
-    if (count === 0) {
-      return { count: 0 };
-    }
+      if (count === 0) {
+        return { count: 0 };
+      }
 
-    const dates = photos
-      .map(photo => photo.takenAt.getTime())
-      .filter(time => !isNaN(time));
+      const dates = photos
+        .map((photo) => photo.takenAt.getTime())
+        .filter((time) => !isNaN(time));
 
-    let dateRange: PhotoDateRange | undefined;
+      let dateRange: PhotoDateRange | undefined;
 
-    if (dates.length > 0) {
-      const minDate = Math.min(...dates);
-      const maxDate = Math.max(...dates);
+      if (dates.length > 0) {
+        const minDate = Math.min(...dates);
+        const maxDate = Math.max(...dates);
 
-      dateRange = {
-        start: new Date(minDate).toDateString(),
-        end: new Date(maxDate).toDateString(),
+        dateRange = {
+          start: new Date(minDate).toDateString(),
+          end: new Date(maxDate).toDateString(),
+        };
+      }
+
+      return {
+        count,
+        dateRange,
       };
-    }
-
-    return {
-      count,
-      dateRange,
-    };
-  },
-  ['immich-photos-meta',
-    albumId,
-    sharedKey,
-    ...getPhotosCacheKeys(options)],
-  { revalidate: CacheStaleTime },
-);
+    },
+    [
+      "immich-photos-meta",
+      context.albumId,
+      context.shareKey,
+      ...getPhotosCacheKeys(options),
+    ],
+    { revalidate: CacheStaleTime }
+  );
 
 export const applyLocalPagination = <T>(
   photos: T[],
-  options: GetPhotosOptions,
+  options: GetPhotosOptions
 ): T[] => {
-  const {
-    limit = PHOTO_DEFAULT_LIMIT,
-    offset = 0,
-  } = options || {};
+  const { limit = PHOTO_DEFAULT_LIMIT, offset = 0 } = options || {};
 
   // Use Array.slice() to get the desired page.
   // slice(start, end)
@@ -434,28 +479,28 @@ export const applyLocalPagination = <T>(
 // copy from src/photo/cache.ts
 const getPhotosCacheKeyForOption = (
   options: GetPhotosOptions,
-  option: keyof GetPhotosOptions,
+  option: keyof GetPhotosOptions
 ): string | null => {
   switch (option) {
-  // Complex keys
-  case 'camera': {
-    const value = options[option];
-    return value ? `${option}-${createCameraKey(value)}` : null;
-  }
-  case 'lens': {
-    const value = options[option];
-    return value ? `${option}-${createLensKey(value)}` : null;
-  }
-  case 'takenBefore':
-  case 'takenAfterInclusive':
-  case 'updatedBefore': {
-    const value = options[option];
-    return value ? `${option}-${value.toISOString()}` : null;
-  }
-  // Primitive keys
-  default:
-    const value = options[option];
-    return value !== undefined ? `${option}-${value}` : null;
+    // Complex keys
+    case "camera": {
+      const value = options[option];
+      return value ? `${option}-${createCameraKey(value)}` : null;
+    }
+    case "lens": {
+      const value = options[option];
+      return value ? `${option}-${createLensKey(value)}` : null;
+    }
+    case "takenBefore":
+    case "takenAfterInclusive":
+    case "updatedBefore": {
+      const value = options[option];
+      return value ? `${option}-${value.toISOString()}` : null;
+    }
+    // Primitive keys
+    default:
+      const value = options[option];
+      return value !== undefined ? `${option}-${value}` : null;
   }
 };
 
@@ -463,12 +508,14 @@ const getPhotosCacheKeyForOption = (
 export const getPhotosCacheKeys = (options: GetPhotosOptions = {}) => {
   const tags: string[] = [];
 
-  Object.keys(options).forEach(key => {
+  Object.keys(options).forEach((key) => {
     const tag = getPhotosCacheKeyForOption(
       options,
-      key as keyof GetPhotosOptions,
+      key as keyof GetPhotosOptions
     );
-    if (tag) { tags.push(tag); }
+    if (tag) {
+      tags.push(tag);
+    }
   });
 
   return tags;

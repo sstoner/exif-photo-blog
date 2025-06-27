@@ -30,15 +30,7 @@ export const downloadFileFromBrowser = async (
   url: string,
   fileName: string,
 ) => {
-  let currentUrl = url;
-  if (currentUrl.includes('/api/immich/assets')) {
-    const urlObj = new URL(currentUrl);
-    urlObj.pathname = urlObj.pathname.replace('/thumbnail', '/original');
-    urlObj.searchParams.delete('size');
-    currentUrl = urlObj.toString();
-  }
-
-  const blob = await fetch(currentUrl)
+  const blob = await fetch(url)
     .then(response => response.blob());
   const downloadUrl = window.URL.createObjectURL(blob);
   const link = document.createElement('a');

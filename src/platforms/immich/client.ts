@@ -1,6 +1,4 @@
-import {
-  IMMICH_BASE_URL,
-} from '@/app/config';
+import { IMMICH_BASE_URL } from "@/app/config";
 
 export interface ImmichAlbumInfo {
   albumName: string;
@@ -23,14 +21,13 @@ export interface ImmichAlbumInfo {
   updatedAt: string;
 }
 
-
 export interface ImmichAsset {
   id: string;
   deviceAssetId: string;
   ownerId: string;
   deviceId: string;
   libraryId: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: "IMAGE" | "VIDEO";
   originalPath: string;
   originalFileName: string;
   originalMimeType: string;
@@ -99,17 +96,19 @@ export class ImmichApiClient {
   private apiKey: string | undefined;
 
   constructor(baseUrl: string, apiKey?: string) {
-    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.baseUrl = baseUrl.replace(/\/$/, "");
     this.apiKey = apiKey;
   }
 
   private async request<T>(
-    endpoint: string, options: RequestInit = {}): Promise<T> {
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     const url = `${this.baseUrl}/api${endpoint}`;
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         // 'x-api-key': this.apiKey,
         ...options.headers,
       },
@@ -123,52 +122,55 @@ export class ImmichApiClient {
     return response.json();
   }
 
-
   // -------------- request immich api ---------------
   async getAlbumInfo(
     id: string,
-    withoutAssets: boolean = false): Promise<ImmichAlbumInfo> {
-    if (!id || id.trim() === '' || id === null) {
-      throw new Error('Album ID is required');
+    withoutAssets: boolean = false
+  ): Promise<ImmichAlbumInfo> {
+    if (!id || id.trim() === "" || id === null) {
+      throw new Error("Album ID is required");
     }
 
-    const queryParam = withoutAssets ?
-      '?withoutAssets=true' :
-      '?withoutAssets=false';
+    const queryParam = withoutAssets
+      ? "?withoutAssets=true"
+      : "?withoutAssets=false";
     return this.request<ImmichAlbumInfo>(`/albums/${id}${queryParam}`);
   }
 
-  async getSharedLinkInfo(
-    sharedKey: string): Promise<ImmichSharedLinkInfo> {
-    if (!sharedKey || sharedKey.trim() === '') {
-      throw new Error('Shared key is required');
+  async getSharedLinkInfo(sharedKey: string): Promise<ImmichSharedLinkInfo> {
+    if (!sharedKey || sharedKey.trim() === "") {
+      throw new Error("Shared key is required");
     }
 
     try {
       return await this.request<ImmichSharedLinkInfo>(
-        `/shared-links/me?key=${sharedKey}`);
+        `/shared-links/me?key=${sharedKey}`
+      );
     } catch (error) {
       throw new Error(
         `Failed to get shared link info for key "${sharedKey}": 
-        ${error instanceof Error ? error.message : String(error)}`);
+        ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   async getAssetInfo(
     id: string,
     _hidden?: boolean,
-    shareKey?: string): Promise<ImmichAsset> {
-    if (!id || id.trim() === '') {
-      throw new Error('Asset ID is required');
+    shareKey?: string
+  ): Promise<ImmichAsset> {
+    if (!id || id.trim() === "") {
+      throw new Error("Asset ID is required");
     }
     try {
-      const queryParams = shareKey ? `?key=${shareKey}` : '';
-      const asset = await this.
-        request<ImmichAsset>(`/assets/${id}${queryParams}`);
+      const queryParams = shareKey ? `?key=${shareKey}` : "";
+      const asset = await this.request<ImmichAsset>(
+        `/assets/${id}${queryParams}`
+      );
       // TODO: use hidden
       return asset;
     } catch (error) {
-      if (error instanceof Error && error.message.includes('404')) {
+      if (error instanceof Error && error.message.includes("404")) {
         throw new Error(`Asset with ID ${id} not found`);
       }
       throw error;
@@ -176,25 +178,33 @@ export class ImmichApiClient {
   }
 
   async getAllTags(): Promise<string[]> {
-    const result = await this.
-      request<{ id: string; name: string; value: string }[]>('/tags');
-    return result.map(tag => tag.value);
+    const result = await this.request<
+      { id: string; name: string; value: string }[]
+    >("/tags");
+    return result.map((tag) => tag.value);
   }
 
   async getTimeBuckets(
-    size: 'DAY' | 'MONTH' = 'MONTH'):
-    Promise<Array<{ timeBucket: string; count: number }>> {
-    return this.request<Array<{
-      timeBucket: string; count: number
-    }>>(`/assets/time-buckets?size=${size}`);
+    size: "DAY" | "MONTH" = "MONTH"
+  ): Promise<Array<{ timeBucket: string; count: number }>> {
+    return this.request<
+      Array<{
+        timeBucket: string;
+        count: number;
+      }>
+    >(`/assets/time-buckets?size=${size}`);
   }
 
   async getAssetStatistics(): Promise<{
-    images: number; videos: number; total: number
+    images: number;
+    videos: number;
+    total: number;
   }> {
     return this.request<{
-      images: number; videos: number; total: number
-    }>('/assets/statistics');
+      images: number;
+      videos: number;
+      total: number;
+    }>("/assets/statistics");
   }
 }
 
@@ -203,7 +213,7 @@ let immichClient: ImmichApiClient;
 export const getImmichClient = (): ImmichApiClient => {
   if (!immichClient) {
     if (!IMMICH_BASE_URL) {
-      throw new Error('IMMICH_BASE_URL required');
+      throw new Error("IMMICH_BASE_URL required");
     }
 
     immichClient = new ImmichApiClient(IMMICH_BASE_URL);
@@ -212,6 +222,7 @@ export const getImmichClient = (): ImmichApiClient => {
 };
 
 export async function getSharedLinkInfo(
-  shareKey: string): Promise<ImmichSharedLinkInfo> {
+  shareKey: string
+): Promise<ImmichSharedLinkInfo> {
   return getImmichClient().getSharedLinkInfo(shareKey);
 }

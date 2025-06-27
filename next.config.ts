@@ -1,4 +1,3 @@
-import { removeUrlProtocol } from '@/utility/url';
 import type { NextConfig } from 'next';
 import { RemotePattern } from 'next/dist/shared/lib/image-config';
 import path from 'path';
@@ -11,23 +10,27 @@ const HOSTNAME_VERCEL_BLOB = VERCEL_BLOB_STORE_ID
   ? `${VERCEL_BLOB_STORE_ID}.public.blob.vercel-storage.com`
   : undefined;
 
+const HOSTNAME_IMMICH = process.env.IMMICH_BASE_URL || 'https://immich.app';
+
 const HOSTNAME_CLOUDFLARE_R2 =
   process.env.NEXT_PUBLIC_CLOUDFLARE_R2_PUBLIC_DOMAIN;
 
 const HOSTNAME_AWS_S3 =
   process.env.NEXT_PUBLIC_AWS_S3_BUCKET &&
-  process.env.NEXT_PUBLIC_AWS_S3_REGION
+    process.env.NEXT_PUBLIC_AWS_S3_REGION
     // eslint-disable-next-line max-len
     ? `${process.env.NEXT_PUBLIC_AWS_S3_BUCKET}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com`
     : undefined;
 
-const generateRemotePattern = (hostname: string) =>
-  ({
-    protocol: 'https',
-    hostname: removeUrlProtocol(hostname)!,
-    port: '',
+const generateRemotePattern = (hostname: string) => {
+  const parsedUrl = new URL(hostname);
+  return {
+    protocol: parsedUrl.protocol.replace(':', '') as 'http' | 'https',
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port || '',
     pathname: '/**',
-  } as const);
+  } as const;
+};
 
 const remotePatterns: RemotePattern[] = [];
 
@@ -40,6 +43,10 @@ if (HOSTNAME_CLOUDFLARE_R2) {
 if (HOSTNAME_AWS_S3) {
   remotePatterns.push(generateRemotePattern(HOSTNAME_AWS_S3));
 }
+if (HOSTNAME_IMMICH) {
+  remotePatterns.push(generateRemotePattern(HOSTNAME_IMMICH));
+}
+
 
 const LOCALE = process.env.NEXT_PUBLIC_LOCALE || 'en-us';
 const LOCALE_ALIAS = './date-fns-locale-alias';
@@ -51,6 +58,8 @@ const nextConfig: NextConfig = {
     remotePatterns,
     minimumCacheTTL: 31536000,
   },
+  // Enable standalone output for smaller Docker images
+  output: 'standalone',
   turbopack: {
     resolveAlias: {
       [LOCALE_ALIAS]: `@/${LOCALE_DYNAMIC}`,

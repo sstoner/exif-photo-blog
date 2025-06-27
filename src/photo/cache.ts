@@ -36,20 +36,21 @@ import {
   pathForPhoto,
 } from '@/app/paths';
 import { createLensKey } from '@/lens';
+import { USE_IMMICH_BACKEND } from '@/app/config';
 
 // Table key
-export const KEY_PHOTOS     = 'photos';
-const KEY_PHOTO             = 'photo';
+export const KEY_PHOTOS = 'photos';
+const KEY_PHOTO = 'photo';
 // Field keys
-const KEY_CAMERAS           = 'cameras';
-const KEY_LENSES            = 'lenses';
-const KEY_TAGS              = 'tags';
-const KEY_FILMS             = 'films';
-const KEY_RECIPES           = 'recipes';
-const KEY_FOCAL_LENGTHS     = 'focal-lengths';
+const KEY_CAMERAS = 'cameras';
+const KEY_LENSES = 'lenses';
+const KEY_TAGS = 'tags';
+const KEY_FILMS = 'films';
+const KEY_RECIPES = 'recipes';
+const KEY_FOCAL_LENGTHS = 'focal-lengths';
 // Type keys
-const KEY_COUNT             = 'count';
-const KEY_DATE_RANGE        = 'date-range';
+const KEY_COUNT = 'count';
+const KEY_DATE_RANGE = 'date-range';
 
 const getPhotosCacheKeyForOption = (
   options: GetPhotosOptions,
@@ -66,7 +67,7 @@ const getPhotosCacheKeyForOption = (
     return value ? `${option}-${createLensKey(value)}` : null;
   }
   case 'takenBefore':
-  case 'takenAfterInclusive': 
+  case 'takenAfterInclusive':
   case 'updatedBefore': {
     const value = options[option];
     return value ? `${option}-${value.toISOString()}` : null;
@@ -78,7 +79,7 @@ const getPhotosCacheKeyForOption = (
   }
 };
 
-const getPhotosCacheKeys = (options: GetPhotosOptions = {}) => {
+export const getPhotosCacheKeys = (options: GetPhotosOptions = {}) => {
   const tags: string[] = [];
 
   Object.keys(options).forEach(key => {
@@ -157,39 +158,52 @@ export const revalidatePhoto = (photoId: string) => {
 
 // Cache
 
-export const getPhotosCached = (
-  ...args: Parameters<typeof getPhotos>
-) => unstable_cache(
-  getPhotos,
-  [KEY_PHOTOS, ...getPhotosCacheKeys(...args)],
-)(...args).then(parseCachedPhotosDates);
+export const getPhotosCached = (...args: Parameters<typeof getPhotos>) => {
+  const fetchPhotos = USE_IMMICH_BACKEND
+    ? getPhotos
+    : unstable_cache(
+      getPhotos,
+      [KEY_PHOTOS, ...getPhotosCacheKeys(args[0])],
+    );
+
+  return fetchPhotos(...args).then(photos => {
+    return parseCachedPhotosDates(photos);
+  });
+};
 
 export const getPhotosNearIdCached = (
   ...args: Parameters<typeof getPhotosNearId>
-) => unstable_cache(
-  getPhotosNearId,
-  [KEY_PHOTOS, ...getPhotosCacheKeys(args[1])],
-)(...args).then(({ photos, indexNumber }) => {
-  const [photoId, { limit }] = args;
-  const photo = photos.find(({ id }) => id === photoId);
-  const isPhotoFirst = photos.findIndex(p => p.id === photoId) === 0;
-  return {
-    photo: photo ? parseCachedPhotoDates(photo) : undefined,
-    photos: parseCachedPhotosDates(photos),
-    ...limit && {
-      photosGrid: photos.slice(
-        isPhotoFirst ? 1 : 2,
-        isPhotoFirst ? limit - 1 : limit,
-      ),
-    },
-    indexNumber,
-  };
-});
+) => {
+  const fetchPhotosNearId = USE_IMMICH_BACKEND
+    ? getPhotosNearId
+    : unstable_cache(
+      getPhotosNearId,
+      [KEY_PHOTOS, ...getPhotosCacheKeys(args[1])],
+    );
 
-export const getPhotosMetaCached = unstable_cache(
-  getPhotosMeta,
-  [KEY_PHOTOS, KEY_COUNT, KEY_DATE_RANGE],
-);
+  return fetchPhotosNearId(...args).then(({ photos, indexNumber }) => {
+    const [photoId, { limit }] = args;
+    const photo = photos.find(({ id }) => id === photoId);
+    const isPhotoFirst = photos.findIndex(p => p.id === photoId) === 0;
+    return {
+      photo: photo ? parseCachedPhotoDates(photo) : undefined,
+      photos: parseCachedPhotosDates(photos),
+      ...limit && {
+        photosGrid: photos.slice(
+          isPhotoFirst ? 1 : 2,
+          isPhotoFirst ? limit - 1 : limit,
+        ),
+      },
+      indexNumber,
+    };
+  });
+};
+
+export const getPhotosMetaCached = USE_IMMICH_BACKEND ?
+  getPhotosMeta : unstable_cache(
+    getPhotosMeta,
+    [KEY_PHOTOS, KEY_COUNT, KEY_DATE_RANGE],
+  );
 
 export const getPhotosMostRecentUpdateCached =
   unstable_cache(
@@ -197,44 +211,51 @@ export const getPhotosMostRecentUpdateCached =
     [KEY_PHOTOS, KEY_COUNT, KEY_DATE_RANGE],
   );
 
-export const getPhotoCached = (...args: Parameters<typeof getPhoto>) =>
-  unstable_cache(
-    getPhoto,
-    [KEY_PHOTOS, KEY_PHOTO],
-  )(...args).then(photo => photo ? parseCachedPhotoDates(photo) : undefined);
+export const getPhotoCached = (...args: Parameters<typeof getPhoto>) => {
+  const fetchPhoto = USE_IMMICH_BACKEND
+    ? getPhoto
+    : unstable_cache(getPhoto, [KEY_PHOTOS, KEY_PHOTO]);
+  return fetchPhoto(...args).then(result =>
+    result ? parseCachedPhotoDates(result) : undefined,
+  );
+};
 
-export const getUniqueTagsCached =
-  unstable_cache(
+export const getUniqueTagsCached = USE_IMMICH_BACKEND ?
+  getUniqueTags : unstable_cache(
     getUniqueTags,
     [KEY_PHOTOS, KEY_TAGS],
   );
 
-export const getUniqueCamerasCached =
+export const getUniqueCamerasCached = USE_IMMICH_BACKEND ?
+  getUniqueCameras :
   unstable_cache(
     getUniqueCameras,
     [KEY_PHOTOS, KEY_CAMERAS],
   );
 
-export const getUniqueLensesCached =
+export const getUniqueLensesCached = USE_IMMICH_BACKEND ?
+  getUniqueLenses :
   unstable_cache(
     getUniqueLenses,
     [KEY_PHOTOS, KEY_LENSES],
   );
 
-export const getUniqueFilmsCached =
+export const getUniqueFilmsCached = USE_IMMICH_BACKEND ?
+  getUniqueFilms :
   unstable_cache(
     getUniqueFilms,
     [KEY_PHOTOS, KEY_FILMS],
   );
 
-export const getUniqueRecipesCached =
+export const getUniqueRecipesCached = USE_IMMICH_BACKEND ?
+  getUniqueRecipes :
   unstable_cache(
     getUniqueRecipes,
     [KEY_PHOTOS, KEY_RECIPES],
   );
 
-export const getUniqueFocalLengthsCached =
-  unstable_cache(
+export const getUniqueFocalLengthsCached = USE_IMMICH_BACKEND ?
+  getUniqueFocalLengths : unstable_cache(
     getUniqueFocalLengths,
     [KEY_PHOTOS, KEY_FOCAL_LENGTHS],
   );
